@@ -1,0 +1,48 @@
+name: Sync to HuggingFace
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'datasets/**'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install huggingface_hub datasets
+      
+      - name: Sync to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          from huggingface_hub import HfApi
+          import os
+          
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          
+          # Sync datasets folder if it exists
+          if os.path.exists('datasets'):
+              api.upload_folder(
+                  folder_path='datasets',
+                  repo_id='spectrumroot/mars-edl-golden-path',
+                  repo_type='dataset'
+              )
+              print('Synced to HuggingFace')
+          else:
+              print('No datasets folder found')
+          "
+      
+      - name: Report status
+        run: echo "Sync complete"
